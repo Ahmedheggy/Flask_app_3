@@ -1,0 +1,31 @@
+version: '3.8'  # Specify the Docker Compose version
+
+services:
+  web:  # Define the web application service
+    build: .  # Build from the Dockerfile in the current directory
+    ports:
+      - "8000:5000"  # Map port 5000 in the container to 8000 on the host
+    depends_on:
+      - db
+      - redis
+      #Constructs a PostgreSQL connection string dynamically using variables from the .env file.
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_HOST: ${REDIS_HOST}     #define redis hostname
+    env_file:
+      - .env       # Load environment variables
+
+  db:
+    image: postgres:latest
+    restart: always       #if container stops or crashes, Docker will automatically restart it.
+    env_file:
+      - .env
+    volumes:
+      - db_data:/var/lib/postgresql/data    #directory inside the Postgresql container where data is stored.
+
+  redis:
+    image: redis:latest
+    restart: always
+
+volumes:
+  db_data:      #declaration of db_data to be used in Postgresql container
