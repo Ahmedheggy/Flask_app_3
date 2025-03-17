@@ -1,0 +1,37 @@
+image: docker:latest
+
+services:
+  - docker:dind  # Docker-in-Docker for running containers
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  IMAGE_NAME: flask-app
+  IMAGE_TAG: latest
+  REGISTRY: registry.gitlab.local/root/my-devops-project
+
+before_script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+
+build:
+  stage: build
+  script:
+    - docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
+    - docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+
+test:
+  stage: test
+  script:
+    - echo "Running tests..."
+    - docker run --rm $REGISTRY/$IMAGE_NAME:$IMAGE_TAG flask --version
+
+deploy:
+  stage: deploy
+  only:
+    - main
+  script:
+    - echo "Deploying application..."
+    - docker run -d -p 8000:5000 --name flask-app $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
